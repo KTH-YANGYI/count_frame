@@ -208,6 +208,41 @@ def peak_groups(
     return filtered
 
 
+def threshold_groups(
+    signal: np.ndarray,
+    threshold: float,
+    min_width: int,
+    gap: int,
+    boundary_margin: int,
+) -> List[Tuple[int, int]]:
+    s = np.asarray(signal, dtype=np.float32)
+    idx = np.where(np.isfinite(s) & (s >= float(threshold)))[0]
+    if len(idx) == 0:
+        return []
+
+    groups: List[Tuple[int, int]] = []
+    st = int(idx[0])
+    prev = int(idx[0])
+    for i in idx[1:]:
+        i = int(i)
+        if i - prev <= gap:
+            prev = i
+        else:
+            groups.append((st, prev))
+            st = prev = i
+    groups.append((st, prev))
+
+    filtered: List[Tuple[int, int]] = []
+    n = len(s)
+    for st, en in groups:
+        if en - st + 1 < min_width:
+            continue
+        if en > n - 1 - boundary_margin:
+            continue
+        filtered.append((st, en))
+    return filtered
+
+
 def groups_to_events(signal: np.ndarray, groups: Iterable[Tuple[int, int]], event_type: str = "") -> List[Event]:
     s = np.asarray(signal, dtype=np.float32)
     events: List[Event] = []
@@ -236,6 +271,45 @@ def nms_events(events: List[Event], min_separation: int, max_events: int, select
         if len(chosen) >= max_events:
             break
     return sorted(chosen, key=lambda e: e.peak)
+
+
+def average_cross_score_gap(
+    events: Sequence[Event],
+    primary_state_score: np.ndarray,
+    secondary_state_score: np.ndarray,
+) -> float:
+    gaps: List[float] = []
+    for e in events:
+        if 0 <= e.peak < len(primary_state_score):
+            gaps.append(abs(float(primary_state_score[e.peak]) - float(secondary_state_score[e.peak])))
+    if not gaps:
+        return 0.0
+    return float(sum(gaps) / len(gaps))
+
+
+def build_margin_rule_events(
+    dominant_signal: np.ndarray,
+    other_signal: np.ndarray,
+    event_type: str,
+    average_gap: float,
+    min_width: int,
+    gap: int,
+    boundary_margin: int,
+    start_frame: int,
+    end_frame: int,
+) -> List[Event]:
+    if average_gap <= 1e-6:
+        return []
+    margin_signal = np.asarray(dominant_signal, dtype=np.float32) - np.asarray(other_signal, dtype=np.float32)
+    groups = threshold_groups(
+        margin_signal,
+        threshold=float(average_gap * 0.5),
+        min_width=min_width,
+        gap=gap,
+        boundary_margin=boundary_margin,
+    )
+    events = groups_to_events(margin_signal, groups, event_type=event_type)
+    return [e for e in events if start_frame <= e.peak <= end_frame]
 
 
 def raw_similarity_to_reference(
@@ -810,6 +884,53 @@ def main() -> None:
 
     selected_primary = nms_events(primary_events, min_separation=min_separation, max_events=max_events, selection=args.selection)
     selected_secondary = nms_events(secondary_events, min_separation=min_separation, max_events=max_events, selection=args.selection)
+
+    reference_average_gap = average_cross_score_gap(
+        selected_primary,
+        primary_state_score=primary_state_score,
+        secondary_state_score=secondary_state_score,
+    )
+    secondary_average_gap = average_cross_score_gap(
+        selected_secondary,
+        primary_state_score=primary_state_score,
+        secondary_state_score=secondary_state_score,
+    )
+
+    margin_rule_primary_events = build_margin_rule_events(
+        dominant_signal=primary_state_score,
+        other_signal=secondary_state_score,
+        event_type="reference",
+        average_gap=reference_average_gap,
+        min_width=min_plateau_width,
+        gap=merge_gap,
+        boundary_margin=boundary_margin,
+        start_frame=start_frame,
+        end_frame=end_frame,
+    )
+    margin_rule_secondary_events = build_margin_rule_events(
+        dominant_signal=secondary_state_score,
+        other_signal=primary_state_score,
+        event_type="reference_plus_2s",
+        average_gap=secondary_average_gap,
+        min_width=min_plateau_width,
+        gap=merge_gap,
+        boundary_margin=boundary_margin,
+        start_frame=start_frame,
+        end_frame=end_frame,
+    )
+
+    selected_primary = nms_events(
+        primary_events + margin_rule_primary_events,
+        min_separation=min_separation,
+        max_events=max_events,
+        selection=args.selection,
+    )
+    selected_secondary = nms_events(
+        secondary_events + margin_rule_secondary_events,
+        min_separation=min_separation,
+        max_events=max_events,
+        selection=args.selection,
+    )
     selected = sorted(selected_primary + selected_secondary, key=lambda e: e.peak)
 
     save_keyframes(args.video, selected, out_dir, prefix=Path(args.video).stem)
@@ -853,6 +974,34 @@ def main() -> None:
                 "mean": float(np.nanmean(mask_count)) if len(mask_count) else 0.0,
                 "max": float(np.nanmax(mask_count)) if len(mask_count) else 0.0,
                 "min": float(np.nanmin(mask_count)) if len(mask_count) else 0.0,
+            },
+            "margin_rule": {
+                "enabled": True,
+                "ratio": 0.5,
+                "reference_average_gap": float(reference_average_gap),
+                "reference_threshold": float(reference_average_gap * 0.5),
+                "reference_extra_events": [
+                    {
+                        "frame": e.peak,
+                        "time_seconds": e.peak / fps if fps > 0 else 0.0,
+                        "start": e.start,
+                        "end": e.end,
+                        "score": e.score,
+                    }
+                    for e in margin_rule_primary_events
+                ],
+                "reference_plus_2s_average_gap": float(secondary_average_gap),
+                "reference_plus_2s_threshold": float(secondary_average_gap * 0.5),
+                "reference_plus_2s_extra_events": [
+                    {
+                        "frame": e.peak,
+                        "time_seconds": e.peak / fps if fps > 0 else 0.0,
+                        "start": e.start,
+                        "end": e.end,
+                        "score": e.score,
+                    }
+                    for e in margin_rule_secondary_events
+                ],
             },
             "reference_top_events": [
                 {
