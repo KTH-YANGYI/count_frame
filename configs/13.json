@@ -1,0 +1,94 @@
+{
+  "hsv_lo": [
+    5,
+    80,
+    50
+  ],
+  "hsv_hi": [
+    22,
+    255,
+    255
+  ],
+  "min_pixels": 40,
+  "smooth_window": 7,
+  "depth_quantile": 0.88,
+  "fused_quantile": 0.88,
+  "min_plateau_width": 5,
+  "merge_gap": 4,
+  "boundary_margin": 20,
+  "min_separation": 35,
+  "max_events": 8,
+  "similarity_resize_hw": [
+    32,
+    32
+  ],
+  "alpha_depth": 0.6,
+  "alpha_pose": 0.4,
+  "workpiece_roi": [
+    321,
+    182,
+    435,
+    663
+  ],
+  "reference_time_sec": 1.206896,
+  "reference_frame_idx": 35,
+  "secondary_reference_offset_sec": 2.0,
+  "secondary_reference_time_sec": 3.206896,
+  "secondary_reference_used_time_sec": 3.20689543071161,
+  "secondary_reference_frame_idx": 93,
+  "secondary_reference_clamped_by_video_end": false,
+  "pose_roi": [
+    242,
+    303,
+    514,
+    533
+  ],
+  "reference_frame_hint": 35,
+  "_meta": {
+    "source_csv": "C:\\Users\\18046\\Desktop\\master\\masterthesis\\frameextraction\\debug_inspect\\reference_frames_from_config\\reference_frames.csv",
+    "video_id": "13",
+    "roi_rect_xywh": [
+      160,
+      260,
+      360,
+      360
+    ],
+    "pose_seed_xyxy": [
+      160,
+      260,
+      520,
+      620
+    ],
+    "roi_source": "auto_per_video:fallback:rect_portrait",
+    "orientation": "portrait",
+    "reference_time_requested_sec": "1.200000",
+    "reference_time_used_sec": "1.206896",
+    "reference_frame_idx": 35,
+    "reference_roi_component": {
+      "mode": "expanded_search",
+      "score": 8.341057222967434,
+      "cx": 377.57721327967806,
+      "cy": 397.6916498993964,
+      "x1": 360,
+      "y1": 307,
+      "x2": 396,
+      "y2": 494,
+      "bw": 36,
+      "bh": 187,
+      "area": 3976,
+      "aspect": 5.194444444444445,
+      "overlap_y": 1.0,
+      "search_xyxy": [
+        96,
+        0,
+        584,
+        692
+      ]
+    },
+    "secondary_reference_time_sec": 3.206896,
+    "secondary_reference_used_time_sec": 3.20689543071161,
+    "secondary_reference_frame_idx": 93,
+    "secondary_reference_offset_sec": 2.0,
+    "secondary_reference_clamped_by_video_end": false
+  }
+}

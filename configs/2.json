@@ -1,0 +1,94 @@
+{
+  "hsv_lo": [
+    5,
+    80,
+    50
+  ],
+  "hsv_hi": [
+    22,
+    255,
+    255
+  ],
+  "min_pixels": 40,
+  "smooth_window": 7,
+  "depth_quantile": 0.88,
+  "fused_quantile": 0.88,
+  "min_plateau_width": 5,
+  "merge_gap": 4,
+  "boundary_margin": 20,
+  "min_separation": 35,
+  "max_events": 8,
+  "similarity_resize_hw": [
+    32,
+    32
+  ],
+  "alpha_depth": 0.6,
+  "alpha_pose": 0.4,
+  "workpiece_roi": [
+    738,
+    99,
+    826,
+    572
+  ],
+  "reference_time_sec": 1.0,
+  "reference_frame_idx": 30,
+  "secondary_reference_offset_sec": 2.0,
+  "secondary_reference_time_sec": 3.0,
+  "secondary_reference_used_time_sec": 3.0,
+  "secondary_reference_frame_idx": 90,
+  "secondary_reference_clamped_by_video_end": false,
+  "pose_roi": [
+    647,
+    321,
+    917,
+    549
+  ],
+  "reference_frame_hint": 30,
+  "_meta": {
+    "source_csv": "C:\\Users\\18046\\Desktop\\master\\masterthesis\\frameextraction\\debug_inspect\\reference_frames_from_config\\reference_frames.csv",
+    "video_id": "2",
+    "roi_rect_xywh": [
+      650,
+      330,
+      260,
+      220
+    ],
+    "pose_seed_xyxy": [
+      650,
+      330,
+      910,
+      550
+    ],
+    "roi_source": "auto_per_video:orb:landscape:2",
+    "orientation": "landscape",
+    "reference_time_requested_sec": "1.000000",
+    "reference_time_used_sec": "1.000000",
+    "reference_frame_idx": 30,
+    "reference_roi_component": {
+      "mode": "expanded_search",
+      "score": 7.767761479917716,
+      "cx": 781.620725388601,
+      "cy": 357.5082901554404,
+      "x1": 751,
+      "y1": 176,
+      "x2": 821,
+      "y2": 514,
+      "bw": 70,
+      "bh": 338,
+      "area": 15440,
+      "aspect": 4.828571428571428,
+      "overlap_y": 0.5443786982248521,
+      "search_xyxy": [
+        604,
+        55,
+        956,
+        594
+      ]
+    },
+    "secondary_reference_time_sec": 3.0,
+    "secondary_reference_used_time_sec": 3.0,
+    "secondary_reference_frame_idx": 90,
+    "secondary_reference_offset_sec": 2.0,
+    "secondary_reference_clamped_by_video_end": false
+  }
+}

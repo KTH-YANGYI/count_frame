@@ -1,0 +1,42 @@
+{
+  "_meta": {
+    "description": "默认模板。可以直接复制为 <video_id>.json，或通过 generate_configs_from_reference_csv.py 批量生成。"
+  },
+  "workpiece_roi": [
+    0,
+    0,
+    80,
+    160
+  ],
+  "pose_roi": [
+    0,
+    0,
+    200,
+    200
+  ],
+  "hsv_lo": [
+    5,
+    80,
+    50
+  ],
+  "hsv_hi": [
+    22,
+    255,
+    255
+  ],
+  "min_pixels": 40,
+  "smooth_window": 7,
+  "depth_quantile": 0.88,
+  "fused_quantile": 0.88,
+  "min_plateau_width": 5,
+  "merge_gap": 4,
+  "boundary_margin": 20,
+  "min_separation": 35,
+  "max_events": 10,
+  "similarity_resize_hw": [
+    32,
+    32
+  ],
+  "alpha_depth": 0.6,
+  "alpha_pose": 0.4
+}
