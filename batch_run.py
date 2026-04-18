@@ -8,7 +8,7 @@ import sys
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from config_utils import build_config_from_reference_row, load_reference_rows, save_config
+from config_utils import BUNDLED_REFERENCE_CSV, build_config_from_reference_row, load_reference_rows, save_config
 
 
 def numeric_video_sort_key(path: Path) -> tuple:
@@ -82,11 +82,16 @@ def write_batch_summary(out_path: Path, rows: List[Dict[str, str]]) -> None:
 
 
 def main() -> None:
+    default_reference_csv = str(BUNDLED_REFERENCE_CSV) if BUNDLED_REFERENCE_CSV.exists() else None
     parser = argparse.ArgumentParser(description="Batch-run max-stroke keyframe extraction over a directory of videos.")
     parser.add_argument("--input-dir", required=True, help="Directory containing input videos")
     parser.add_argument("--config-dir", required=True, help="Directory containing per-video JSON configs")
     parser.add_argument("--output-dir", required=True, help="Directory containing output folders")
-    parser.add_argument("--reference-csv", default=None, help="Optional reference_frames.csv used to auto-generate missing configs")
+    parser.add_argument(
+        "--reference-csv",
+        default=default_reference_csv,
+        help="Optional reference_frames.csv used to auto-generate missing configs; defaults to data/reference/reference_frames.csv when bundled",
+    )
     parser.add_argument("--generated-config-dir", default=None, help="Where auto-generated configs should be written; defaults to <config-dir>/generated")
     parser.add_argument("--selection", choices=["score", "earliest"], default="score", help="Selection mode passed to the extractor")
     parser.add_argument("--max-events", type=int, default=None, help="Optional override passed to the extractor")
@@ -106,7 +111,10 @@ def main() -> None:
     reference_rows = None
     generated_config_dir = None
     if args.reference_csv:
-        reference_rows = load_reference_rows(Path(args.reference_csv))
+        reference_csv_path = Path(args.reference_csv)
+        if not reference_csv_path.exists():
+            raise SystemExit(f"reference CSV not found: {reference_csv_path}")
+        reference_rows = load_reference_rows(reference_csv_path)
         generated_config_dir = Path(args.generated_config_dir) if args.generated_config_dir else config_dir / "generated"
         generated_config_dir.mkdir(parents=True, exist_ok=True)
 

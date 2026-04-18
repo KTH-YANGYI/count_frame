@@ -1,4 +1,4 @@
-{
+﻿{
   "hsv_lo": [
     5,
     80,
@@ -45,7 +45,7 @@
   ],
   "reference_frame_hint": 111,
   "_meta": {
-    "source_csv": "C:\\Users\\18046\\Desktop\\master\\masterthesis\\frameextraction\\debug_inspect\\reference_frames_from_config\\reference_frames.csv",
+    "source_csv": "data/reference/reference_frames.csv",
     "video_id": "7",
     "roi_rect_xywh": [
       0,

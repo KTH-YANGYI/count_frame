@@ -9,6 +9,10 @@ import cv2
 import numpy as np
 
 
+PROJECT_ROOT = Path(__file__).resolve().parent
+BUNDLED_REFERENCE_CSV = PROJECT_ROOT / "data" / "reference" / "reference_frames.csv"
+
+
 DEFAULT_CONFIG: Dict = {
     "hsv_lo": [5, 80, 50],
     "hsv_hi": [22, 255, 255],
@@ -27,6 +31,14 @@ DEFAULT_CONFIG: Dict = {
 }
 
 SECONDARY_REFERENCE_OFFSET_SEC = 2.0
+
+
+def project_relative_path_str(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return str(resolved)
 
 
 def parse_roi_rect(text: str) -> Tuple[int, int, int, int]:
@@ -276,10 +288,13 @@ def derive_rois_from_reference_frame(
 
 
 def load_reference_rows(csv_path: Path) -> Dict[str, Dict[str, str]]:
+    csv_path = csv_path.resolve()
     rows: Dict[str, Dict[str, str]] = {}
     with open(csv_path, "r", encoding="utf-8-sig", newline="") as f:
         reader = csv.DictReader(f)
         for row in reader:
+            row = dict(row)
+            row["source_csv"] = project_relative_path_str(csv_path)
             video_id = str(row["video_id"]).strip()
             if video_id:
                 rows[video_id] = row

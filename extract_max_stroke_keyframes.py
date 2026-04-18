@@ -199,12 +199,14 @@ def peak_groups(
 
     filtered: List[Tuple[int, int]] = []
     n = len(s)
+    end_cutoff = n - 1 - boundary_margin
     for st, en in groups:
-        if en - st + 1 < min_width:
+        clipped_en = min(en, end_cutoff)
+        if clipped_en < st:
             continue
-        if en > n - 1 - boundary_margin:
+        if clipped_en - st + 1 < min_width:
             continue
-        filtered.append((st, en))
+        filtered.append((st, clipped_en))
     return filtered
 
 
@@ -234,12 +236,14 @@ def threshold_groups(
 
     filtered: List[Tuple[int, int]] = []
     n = len(s)
+    end_cutoff = n - 1 - boundary_margin
     for st, en in groups:
-        if en - st + 1 < min_width:
+        clipped_en = min(en, end_cutoff)
+        if clipped_en < st:
             continue
-        if en > n - 1 - boundary_margin:
+        if clipped_en - st + 1 < min_width:
             continue
-        filtered.append((st, en))
+        filtered.append((st, clipped_en))
     return filtered
 
 
@@ -253,6 +257,29 @@ def groups_to_events(signal: np.ndarray, groups: Iterable[Tuple[int, int]], even
         peak_rel = int(np.nanargmax(seg))
         peak = int(st + peak_rel)
         height = float(s[peak])
+        width = int(en - st + 1)
+        score = float(height * width)
+        events.append(Event(start=int(st), end=int(en), peak=peak, height=height, width=width, score=score, event_type=event_type))
+    return events
+
+
+def groups_to_events_with_peak_signal(
+    group_signal: np.ndarray,
+    peak_signal: np.ndarray,
+    groups: Iterable[Tuple[int, int]],
+    event_type: str = "",
+) -> List[Event]:
+    group_values = np.asarray(group_signal, dtype=np.float32)
+    peak_values = np.asarray(peak_signal, dtype=np.float32)
+    events: List[Event] = []
+    for st, en in groups:
+        group_seg = group_values[st : en + 1]
+        peak_seg = peak_values[st : en + 1]
+        if len(group_seg) == 0 or len(peak_seg) == 0:
+            continue
+        peak_rel = int(np.nanargmax(peak_seg))
+        peak = int(st + peak_rel)
+        height = float(peak_values[peak])
         width = int(en - st + 1)
         score = float(height * width)
         events.append(Event(start=int(st), end=int(en), peak=peak, height=height, width=width, score=score, event_type=event_type))
@@ -308,8 +335,42 @@ def build_margin_rule_events(
         gap=gap,
         boundary_margin=boundary_margin,
     )
-    events = groups_to_events(margin_signal, groups, event_type=event_type)
+    events = groups_to_events_with_peak_signal(
+        group_signal=margin_signal,
+        peak_signal=dominant_signal,
+        groups=groups,
+        event_type=event_type,
+    )
     return [e for e in events if start_frame <= e.peak <= end_frame]
+
+
+def keep_margin_events_after_first_base(
+    margin_events: Sequence[Event],
+    base_events: Sequence[Event],
+) -> List[Event]:
+    if not base_events:
+        return list(margin_events)
+    first_base_peak = min(e.peak for e in base_events)
+    return [e for e in margin_events if e.peak >= first_base_peak]
+
+
+def collapse_consecutive_same_type_events(events: Sequence[Event]) -> List[Event]:
+    ordered = sorted(events, key=lambda e: e.peak)
+    if not ordered:
+        return []
+
+    collapsed: List[Event] = []
+    run: List[Event] = [ordered[0]]
+
+    for event in ordered[1:]:
+        if event.event_type == run[-1].event_type:
+            run.append(event)
+            continue
+        collapsed.append(max(run, key=lambda e: (e.score, e.height, -e.peak)))
+        run = [event]
+
+    collapsed.append(max(run, key=lambda e: (e.score, e.height, -e.peak)))
+    return sorted(collapsed, key=lambda e: e.peak)
 
 
 def raw_similarity_to_reference(
@@ -882,16 +943,26 @@ def main() -> None:
         peak = int(np.nanargmax(secondary_state_score[start_frame : end_frame + 1])) + start_frame
         secondary_events = [Event(start=peak, end=peak, peak=peak, height=float(secondary_state_score[peak]), width=1, score=float(secondary_state_score[peak]), event_type="reference_plus_2s")]
 
-    selected_primary = nms_events(primary_events, min_separation=min_separation, max_events=max_events, selection=args.selection)
-    selected_secondary = nms_events(secondary_events, min_separation=min_separation, max_events=max_events, selection=args.selection)
+    base_selected_primary = nms_events(
+        primary_events,
+        min_separation=min_separation,
+        max_events=max_events,
+        selection=args.selection,
+    )
+    base_selected_secondary = nms_events(
+        secondary_events,
+        min_separation=min_separation,
+        max_events=max_events,
+        selection=args.selection,
+    )
 
     reference_average_gap = average_cross_score_gap(
-        selected_primary,
+        base_selected_primary,
         primary_state_score=primary_state_score,
         secondary_state_score=secondary_state_score,
     )
     secondary_average_gap = average_cross_score_gap(
-        selected_secondary,
+        base_selected_secondary,
         primary_state_score=primary_state_score,
         secondary_state_score=secondary_state_score,
     )
@@ -918,6 +989,14 @@ def main() -> None:
         start_frame=start_frame,
         end_frame=end_frame,
     )
+    margin_rule_primary_events = keep_margin_events_after_first_base(
+        margin_rule_primary_events,
+        base_selected_primary,
+    )
+    margin_rule_secondary_events = keep_margin_events_after_first_base(
+        margin_rule_secondary_events,
+        base_selected_secondary,
+    )
 
     selected_primary = nms_events(
         primary_events + margin_rule_primary_events,
@@ -932,6 +1011,9 @@ def main() -> None:
         selection=args.selection,
     )
     selected = sorted(selected_primary + selected_secondary, key=lambda e: e.peak)
+    selected = collapse_consecutive_same_type_events(selected)
+    selected_primary = [e for e in selected if e.event_type == "reference"]
+    selected_secondary = [e for e in selected if e.event_type == "reference_plus_2s"]
 
     save_keyframes(args.video, selected, out_dir, prefix=Path(args.video).stem)
     save_events_csv(out_dir / "events.csv", selected, fps)
