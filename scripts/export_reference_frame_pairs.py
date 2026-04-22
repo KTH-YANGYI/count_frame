@@ -7,7 +7,8 @@ from typing import Dict, Iterable
 
 import cv2
 
-from config_utils import BUNDLED_REFERENCE_CSV, build_config_from_reference_row, load_reference_rows, read_video_metadata
+import _path  # noqa: F401
+from frame_count.config_utils import BUNDLED_REFERENCE_CSV, build_config_from_reference_row, load_reference_rows, read_video_metadata
 
 
 def numeric_video_sort_key(path: Path) -> tuple:

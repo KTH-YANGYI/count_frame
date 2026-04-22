@@ -3,7 +3,8 @@ from __future__ import annotations
 import argparse
 from pathlib import Path
 
-from config_utils import BUNDLED_REFERENCE_CSV, build_config_from_reference_row, load_reference_rows, save_config
+import _path  # noqa: F401
+from frame_count.config_utils import BUNDLED_REFERENCE_CSV, build_config_from_reference_row, load_reference_rows, save_config
 
 
 def numeric_video_sort_key(path: Path) -> tuple:

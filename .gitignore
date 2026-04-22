@@ -1,4 +1,12 @@
 outputs/
 __pycache__/
-*.pyc
+*.py[cod]
+.venv/
+venv/
+configs/generated/
+*.mp4
+*.avi
+*.mov
+*.mkv
 CODEX_BUILD.md
+ALGORITHM_DESCRIPTION_LOCAL.md

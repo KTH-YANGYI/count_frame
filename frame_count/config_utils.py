@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 
-PROJECT_ROOT = Path(__file__).resolve().parent
+PROJECT_ROOT = Path(__file__).resolve().parents[1]
 BUNDLED_REFERENCE_CSV = PROJECT_ROOT / "data" / "reference" / "reference_frames.csv"
 
 
