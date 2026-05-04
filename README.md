@@ -71,6 +71,29 @@ python scripts/batch_run.py ^
 
 If a config is missing and `data/reference/reference_frames.csv` contains a matching `video_id`, the batch runner can auto-generate the missing config into `configs/generated/`.
 
+## iPhone / HDR Visual Keyframe Extraction
+
+`scripts/extract_phone_hdr_visual_keyframes.py` is the visual-only extractor for the four iPhone videos in `手机(1)`. It reuses this project's visual keyframe logic and the manually tuned ROIs; it does not use the audio/event-selection logic from `count`.
+
+By default, selected frames are exported with OpenCV:
+
+```bash
+conda run -n frame-count python scripts/extract_phone_hdr_visual_keyframes.py \
+  --video-dir "/Users/yangyi/Desktop/masterthesis/手机(1)" \
+  --output-root "/Users/yangyi/Desktop/masterthesis/手机(1)/keyframe_extraction_20260504/visual_fusion_opencv"
+```
+
+Use AVFoundation only when explicitly requested, for example when you want macOS/CoreImage HDR tone mapping for iPhone HDR `.MOV` files:
+
+```bash
+conda run -n frame-count python scripts/extract_phone_hdr_visual_keyframes.py \
+  --video-dir "/Users/yangyi/Desktop/masterthesis/手机(1)" \
+  --output-root "/Users/yangyi/Desktop/masterthesis/手机(1)/keyframe_extraction_20260504/visual_fusion_avfoundation" \
+  --frame-export-mode avfoundation
+```
+
+AVFoundation export is imported only in `--frame-export-mode avfoundation` mode. The default OpenCV mode writes `keyframes_opencv_jpg/event_0001.jpg` style files; AVFoundation mode writes `keyframes_avfoundation_srgb/event_0001.png` style files. Each segment also writes an image manifest (`opencv_manifest.csv` or `avfoundation_srgb_manifest.csv`) plus `events.csv`, so the exported image can be mapped back to the source video, event rank, frame, and timestamp.
+
 ## Review And Export Helpers
 
 Export reference and `reference + 2s` frame pairs:
@@ -128,6 +151,7 @@ python scripts/merge_event_manifests.py ^
 Each extracted video output directory usually contains:
 
 - keyframe images
+- keyframe image manifest
 - `events.csv`
 - `debug_signals.png`
 - `run_summary.json`
